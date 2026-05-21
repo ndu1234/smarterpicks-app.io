@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'API only — no build needed'",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/auth/whop/token",      "destination": "/api/auth/whop/token" },
+    { "source": "/api/auth/whop/refresh",    "destination": "/api/auth/whop/refresh" },
+    { "source": "/api/auth/me",              "destination": "/api/auth/me" },
+    { "source": "/api/picks/today",          "destination": "/api/picks/today" },
+    { "source": "/api/picks/archive",        "destination": "/api/picks/archive" },
+    { "source": "/api/stats",                "destination": "/api/stats/index" },
+    { "source": "/api/notifications/register", "destination": "/api/notifications/register" },
+    { "source": "/api/notifications/send",   "destination": "/api/notifications/send" },
+    { "source": "/api/cron/generate-picks",  "destination": "/api/cron/generate-picks" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/generate-picks",
+      "schedule": "0 13 * * *"
+    }
+  ]
+}
