@@ -1,10 +1,11 @@
 node_modules/
-.expo/
-dist/
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
 .env.local
 .env
 *.orig.*
-web-build/
 .vercel/
 google-services.json
 GoogleService-Info.plist
