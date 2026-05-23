@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
   if (code_verifier) params.set('code_verifier', code_verifier);
 
-  const tokenRes = await fetch('https://api.whop.com/v5/oauth/token', {
+  const tokenRes = await fetch('https://api.whop.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString(),

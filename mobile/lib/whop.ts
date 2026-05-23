@@ -29,17 +29,20 @@ export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: s
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
   const state = Math.random().toString(36).substring(2, 18);
+  const nonce = Math.random().toString(36).substring(2, 18);
 
   const params = new URLSearchParams({
     client_id: WHOP_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
+    scope: 'openid profile email',
     state,
+    nonce,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
   });
 
-  const finalUrl = `https://whop.com/oauth/authorize?${params.toString()}`;
+  const finalUrl = `https://api.whop.com/oauth/authorize?${params.toString()}`;
   console.log('Auth URL:', finalUrl);
 
   return { url: finalUrl, codeVerifier };
