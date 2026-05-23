@@ -1,13 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const WHOP_CLIENT_ID = process.env.WHOP_CLIENT_ID!;
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_API_URL || `https://${process.env.VERCEL_URL}`}/api/auth/callback`;
+const REDIRECT_URI = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api/auth/callback`
+  : 'https://smarterpicks-app-io-7o9l.vercel.app/api/auth/callback';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const { code, code_verifier } = req.body;
   if (!code) return res.status(400).json({ error: 'Missing code' });
+
+  console.log('Token exchange redirect_uri:', REDIRECT_URI);
+  console.log('code_verifier present:', !!code_verifier);
 
   const params = new URLSearchParams({
     grant_type: 'authorization_code',
