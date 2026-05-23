@@ -17,11 +17,13 @@ export default function LoginScreen() {
   const [loading, setLocalLoading] = useState(false);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [codeVerifier, setCodeVerifier] = useState<string | null>(null);
 
-  function handleLoginPress() {
+  async function handleLoginPress() {
     try {
       setLocalLoading(true);
-      const { url } = buildWhopAuthUrl();
+      const { url, codeVerifier: verifier } = await buildWhopAuthUrl();
+      setCodeVerifier(verifier);
       setAuthUrl(url);
       setShowModal(true);
     } catch (e) {
@@ -31,17 +33,24 @@ export default function LoginScreen() {
     }
   }
 
-  async function handleToken(accessToken: string, refreshToken: string) {
+  async function handleCode(code: string) {
     setShowModal(false);
     try {
       setLoading(true);
-      await storage.setAccessToken(accessToken);
-      if (refreshToken) await storage.setRefreshToken(refreshToken);
+      const tokenRes = await fetch(`${API_BASE}/api/auth/whop/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, code_verifier: codeVerifier }),
+      });
+      if (!tokenRes.ok) throw new Error(await tokenRes.text());
+      const tokenData = await tokenRes.json();
+      await storage.setAccessToken(tokenData.access_token);
+      if (tokenData.refresh_token) await storage.setRefreshToken(tokenData.refresh_token);
       const me = await api.auth.me();
       setMember(me);
       router.replace('/(tabs)');
     } catch (e) {
-      console.error(e);
+      console.error('Token exchange failed:', e);
     } finally {
       setLoading(false);
     }
@@ -93,7 +102,7 @@ export default function LoginScreen() {
       {showModal && authUrl && (
         <WhopAuthModal
           authUrl={authUrl}
-          onToken={handleToken}
+          onCode={handleCode}
           onCancel={() => setShowModal(false)}
         />
       )}

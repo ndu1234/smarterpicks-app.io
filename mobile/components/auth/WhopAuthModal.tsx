@@ -6,20 +6,19 @@ import { APP_SCHEME } from '@/lib/whop';
 
 interface Props {
   authUrl: string;
-  onToken: (accessToken: string, refreshToken: string) => void;
+  onCode: (code: string) => void;
   onCancel: () => void;
 }
 
-export function WhopAuthModal({ authUrl, onToken, onCancel }: Props) {
+export function WhopAuthModal({ authUrl, onCode, onCancel }: Props) {
   const [loading, setLoading] = useState(true);
 
   function handleNavChange(url: string) {
     if (url.startsWith(APP_SCHEME)) {
       try {
         const parsed = new URL(url);
-        const accessToken = parsed.searchParams.get('access_token');
-        const refreshToken = parsed.searchParams.get('refresh_token') ?? '';
-        if (accessToken) onToken(accessToken, refreshToken);
+        const code = parsed.searchParams.get('code');
+        if (code) onCode(code);
         else onCancel();
       } catch {
         onCancel();

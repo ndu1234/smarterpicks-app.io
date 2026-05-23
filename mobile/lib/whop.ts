@@ -1,9 +1,33 @@
+import * as Crypto from 'expo-crypto';
+
 export const WHOP_CLIENT_ID = process.env.EXPO_PUBLIC_WHOP_CLIENT_ID!;
 export const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
 export const REDIRECT_URI = `${API_BASE}/api/auth/callback`;
 export const APP_SCHEME = 'smarterpicks://oauth';
 
-export function buildWhopAuthUrl(): { url: string } {
+function generateCodeVerifier(): string {
+  const array = new Uint8Array(32);
+  for (let i = 0; i < array.length; i++) {
+    array[i] = Math.floor(Math.random() * 256);
+  }
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const digest = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    verifier,
+    { encoding: Crypto.CryptoEncoding.BASE64 }
+  );
+  return digest.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: string }> {
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
   const state = Math.random().toString(36).substring(2, 18);
 
   const params = new URLSearchParams({
@@ -11,12 +35,14 @@ export function buildWhopAuthUrl(): { url: string } {
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
     state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
   });
 
   const finalUrl = `https://whop.com/oauth/authorize?${params.toString()}`;
   console.log('Auth URL:', finalUrl);
 
-  return { url: finalUrl };
+  return { url: finalUrl, codeVerifier };
 }
 
 export async function refreshWhopToken(refreshToken: string): Promise<string | null> {

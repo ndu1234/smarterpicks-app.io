@@ -11,32 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.send(buildPage('error', String(error || 'No code received')));
   }
 
-  try {
-    const params = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: String(code),
-      client_id: WHOP_CLIENT_ID,
-      client_secret: WHOP_CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
-    });
-
-    const tokenRes = await fetch('https://api.whop.com/v5/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
-
-    if (!tokenRes.ok) {
-      const err = await tokenRes.text();
-      return res.send(buildPage('error', err));
-    }
-
-    const data = await tokenRes.json() as Record<string, unknown>;
-    const deepLink = `smarterpicks://oauth?access_token=${data.access_token}&refresh_token=${data.refresh_token || ''}`;
-    return res.send(buildPage('success', deepLink));
-  } catch (err) {
-    return res.send(buildPage('error', String(err)));
-  }
+  const deepLink = `smarterpicks://oauth?code=${encodeURIComponent(String(code))}`;
+  return res.send(buildPage('success', deepLink));
 }
 
 function buildPage(status: 'success' | 'error', payload: string) {
