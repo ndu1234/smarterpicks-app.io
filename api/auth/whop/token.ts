@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const WHOP_CLIENT_ID = process.env.WHOP_CLIENT_ID!;
-const REDIRECT_URI = `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : process.env.NEXT_PUBLIC_API_URL}/api/auth/callback`;
+const REDIRECT_URI = `${process.env.NEXT_PUBLIC_API_URL || `https://${process.env.VERCEL_URL}`}/api/auth/callback`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
