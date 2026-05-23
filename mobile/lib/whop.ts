@@ -10,7 +10,6 @@ export function buildWhopAuthUrl(): { url: string } {
     client_id: WHOP_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
-    scope: 'openid',
     state,
   });
 
