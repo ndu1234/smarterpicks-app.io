@@ -12,7 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const deepLink = `smarterpicks://oauth?code=${encodeURIComponent(String(code))}`;
-  return res.send(buildPage('success', deepLink));
+  res.setHeader('Location', deepLink);
+  return res.status(302).end();
 }
 
 function buildPage(status: 'success' | 'error', payload: string) {
