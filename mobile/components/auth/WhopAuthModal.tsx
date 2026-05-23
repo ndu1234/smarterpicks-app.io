@@ -1,8 +1,8 @@
 import { Modal, View, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Colors, Fonts } from '@/constants/theme';
-import { APP_SCHEME } from '@/lib/whop';
+import { REDIRECT_URI } from '@/lib/whop';
 
 interface Props {
   authUrl: string;
@@ -13,18 +13,16 @@ interface Props {
 export function WhopAuthModal({ authUrl, onCode, onCancel }: Props) {
   const [loading, setLoading] = useState(true);
 
-  function handleNavChange(url: string) {
-    if (url.startsWith(APP_SCHEME)) {
-      try {
-        const parsed = new URL(url);
-        const code = parsed.searchParams.get('code');
-        if (code) onCode(code);
-        else onCancel();
-      } catch {
-        onCancel();
-      }
-      return;
-    }
+  function tryExtractCode(url: string): boolean {
+    if (!url.startsWith(REDIRECT_URI)) return false;
+    try {
+      const parsed = new URL(url);
+      const code = parsed.searchParams.get('code');
+      const error = parsed.searchParams.get('error');
+      if (code) { onCode(code); return true; }
+      if (error) { onCancel(); return true; }
+    } catch {}
+    return false;
   }
 
   return (
@@ -46,12 +44,8 @@ export function WhopAuthModal({ authUrl, onCode, onCancel }: Props) {
         <WebView
           source={{ uri: authUrl }}
           onLoadEnd={() => setLoading(false)}
-          onNavigationStateChange={(e) => handleNavChange(e.url)}
           onShouldStartLoadWithRequest={(req) => {
-            if (req.url.startsWith(APP_SCHEME)) {
-              handleNavChange(req.url);
-              return false;
-            }
+            if (tryExtractCode(req.url)) return false;
             return true;
           }}
           style={styles.webview}
