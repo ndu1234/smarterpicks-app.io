@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!userRes.ok) return res.status(401).json({ error: 'Invalid token' });
-  const user = await userRes.json();
+  const user = await userRes.json() as Record<string, any>;
 
   await db`
     INSERT INTO push_tokens (whop_user_id, push_token)

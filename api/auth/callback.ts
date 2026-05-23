@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.send(buildPage('error', err));
     }
 
-    const data = await tokenRes.json();
+    const data = await tokenRes.json() as Record<string, unknown>;
     const deepLink = `smarterpicks://oauth?access_token=${data.access_token}&refresh_token=${data.refresh_token || ''}`;
 
     return res.send(buildPage('success', deepLink));

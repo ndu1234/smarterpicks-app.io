@@ -14,12 +14,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     headers: { Authorization: `Bearer ${whopToken}` },
   });
   if (!userRes.ok) return res.status(401).json({ error: 'Invalid token' });
-  const whopUser = await userRes.json();
+  const whopUser = await userRes.json() as Record<string, any>;
 
   const membershipRes = await fetch('https://api.whop.com/v5/me/memberships', {
     headers: { Authorization: `Bearer ${whopToken}` },
   });
-  const membershipData = await membershipRes.json();
+  const membershipData = await membershipRes.json() as Record<string, any>;
   const activeMembership = membershipData.data?.find(
     (m: any) => m.status === 'active' || m.status === 'trialing'
   );

@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Token exchange failed', detail: err });
   }
 
-  const data = await tokenRes.json();
+  const data = await tokenRes.json() as Record<string, unknown>;
   return res.status(200).json({
     access_token: data.access_token,
     refresh_token: data.refresh_token,

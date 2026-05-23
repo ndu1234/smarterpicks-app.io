@@ -40,8 +40,12 @@ export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: s
     code_challenge_method: 'S256',
   });
 
+  const finalUrl = `https://api.whop.com/oauth/authorize?${params.toString()}`;
+  console.log('REDIRECT_URI being sent:', REDIRECT_URI);
+  console.log('Full auth URL:', finalUrl);
+
   return {
-    url: `https://api.whop.com/oauth/authorize?${params.toString()}`,
+    url: finalUrl,
     codeVerifier,
   };
 }

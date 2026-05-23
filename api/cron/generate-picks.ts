@@ -42,7 +42,7 @@ async function fetchOdds(): Promise<OddsGame[]> {
 
       const res = await fetch(url.toString());
       if (res.ok) {
-        const games: OddsGame[] = await res.json();
+        const games = await res.json() as OddsGame[];
         results.push(...games.slice(0, 6));
       }
     } catch (e) {
