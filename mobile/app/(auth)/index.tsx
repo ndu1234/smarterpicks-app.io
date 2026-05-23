@@ -1,43 +1,42 @@
-import { useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { GoldButton } from '@/components/ui/GoldButton';
+import { WhopAuthModal } from '@/components/auth/WhopAuthModal';
 import { storage } from '@/lib/storage';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
-import { useWhopAuth } from '@/lib/whop';
-
-WebBrowser.maybeCompleteAuthSession();
+import { buildWhopAuthUrl } from '@/lib/whop';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
 
 export default function LoginScreen() {
   const router = useRouter();
   const { setMember, setLoading } = useAuthStore();
-  const { request, response, promptAsync } = useWhopAuth();
+  const [loading, setLocalLoading] = useState(false);
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { code } = response.params;
-      handleCodeExchange(code, request?.codeVerifier);
+  async function handleLoginPress() {
+    try {
+      setLocalLoading(true);
+      const { url } = await buildWhopAuthUrl();
+      setAuthUrl(url);
+      setShowModal(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLocalLoading(false);
     }
-  }, [response]);
+  }
 
-  async function handleCodeExchange(code: string, codeVerifier?: string) {
+  async function handleToken(accessToken: string, refreshToken: string) {
+    setShowModal(false);
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/auth/whop/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, code_verifier: codeVerifier }),
-      });
-      if (!res.ok) throw new Error('Token exchange failed');
-      const { access_token, refresh_token } = await res.json();
-      await storage.setAccessToken(access_token);
-      if (refresh_token) await storage.setRefreshToken(refresh_token);
+      await storage.setAccessToken(accessToken);
+      if (refreshToken) await storage.setRefreshToken(refreshToken);
       const me = await api.auth.me();
       setMember(me);
       router.replace('/(tabs)');
@@ -77,8 +76,8 @@ export default function LoginScreen() {
       <View style={styles.actions}>
         <GoldButton
           label="Sign in with Whop →"
-          onPress={() => promptAsync()}
-          disabled={!request}
+          onPress={handleLoginPress}
+          loading={loading}
         />
         <Text style={styles.legal}>
           Members only. Start your 7-day free trial at smarterpicks.io
@@ -90,6 +89,14 @@ export default function LoginScreen() {
           AI-POWERED · DAILY PICKS · TRANSPARENT ARCHIVE · ALL MAJOR SPORTS
         </Text>
       </View>
+
+      {showModal && authUrl && (
+        <WhopAuthModal
+          authUrl={authUrl}
+          onToken={handleToken}
+          onCancel={() => setShowModal(false)}
+        />
+      )}
     </View>
   );
 }

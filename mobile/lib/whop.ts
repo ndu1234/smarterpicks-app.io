@@ -1,31 +1,49 @@
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import { storage } from './storage';
+import * as Crypto from 'expo-crypto';
 
-WebBrowser.maybeCompleteAuthSession();
+export const WHOP_CLIENT_ID = process.env.EXPO_PUBLIC_WHOP_CLIENT_ID!;
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
+export const REDIRECT_URI = `${API_BASE}/api/auth/callback`;
+export const APP_SCHEME = 'smarterpicks://oauth';
 
-const WHOP_CLIENT_ID = process.env.EXPO_PUBLIC_WHOP_CLIENT_ID!;
-const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
+function generateCodeVerifier(): string {
+  const array = new Uint8Array(32);
+  for (let i = 0; i < array.length; i++) {
+    array[i] = Math.floor(Math.random() * 256);
+  }
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
 
-const discovery = {
-  authorizationEndpoint: 'https://whop.com/oauth',
-  tokenEndpoint: `${API_BASE}/api/auth/whop/token`,
-};
-
-export function useWhopAuth() {
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'smarterpicks' });
-
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: WHOP_CLIENT_ID,
-      redirectUri,
-      scopes: ['openid', 'email', 'profile', 'memberships:read'],
-      usePKCE: true,
-    },
-    discovery
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const digest = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    verifier,
+    { encoding: Crypto.CryptoEncoding.BASE64 }
   );
+  return digest.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
 
-  return { request, response, promptAsync };
+export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: string }> {
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+  const state = Math.random().toString(36).substring(2, 18);
+
+  const params = new URLSearchParams({
+    client_id: WHOP_CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: 'code',
+    scope: 'openid profile email',
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+  });
+
+  return {
+    url: `https://api.whop.com/oauth/authorize?${params.toString()}`,
+    codeVerifier,
+  };
 }
 
 export async function refreshWhopToken(refreshToken: string): Promise<string | null> {
@@ -37,8 +55,6 @@ export async function refreshWhopToken(refreshToken: string): Promise<string | n
     });
     if (!res.ok) return null;
     const data = await res.json();
-    await storage.setAccessToken(data.access_token);
-    if (data.refresh_token) await storage.setRefreshToken(data.refresh_token);
     return data.access_token;
   } catch {
     return null;

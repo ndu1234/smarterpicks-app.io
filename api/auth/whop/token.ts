@@ -9,7 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { code, code_verifier } = req.body;
   if (!code) return res.status(400).json({ error: 'Missing code' });
 
-  const redirectUri = req.headers['x-redirect-uri'] as string || process.env.WHOP_REDIRECT_URI!;
+  const redirectUri = 'smarterpicks://oauth';
 
   const params = new URLSearchParams({
     grant_type: 'authorization_code',

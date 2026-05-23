@@ -4,13 +4,7 @@
     "slug": "smarterpicks",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0a0a0a"
-    },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
@@ -21,29 +15,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0a"
       },
-      "package": "io.smarterpicks.app",
-      "googleServicesFile": "./google-services.json"
+      "package": "io.smarterpicks.app"
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#d4a843",
-          "sounds": []
-        }
-      ],
-      [
-        "expo-font",
-        {
-          "fonts": []
-        }
-      ]
+      "expo-notifications"
     ],
     "scheme": "smarterpicks",
     "extra": {
