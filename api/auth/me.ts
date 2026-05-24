@@ -1,8 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireAuth } from '../_middleware';
-import { db } from '../_db';
 
 const WHOP_API_KEY = process.env.WHOP_API_KEY!;
+
+function decodeJwt(token: string): Record<string, any> {
+  const payload = token.split('.')[1];
+  if (!payload) throw new Error('Invalid JWT');
+  const padded = payload + '=='.slice((payload.length % 4) || 4);
+  return JSON.parse(Buffer.from(padded.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).end();
@@ -10,15 +16,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const whopToken = requireAuth(req);
   if (!whopToken) return res.status(401).json({ error: 'Unauthorized' });
 
-  const userRes = await fetch('https://api.whop.com/v5/me', {
-    headers: { Authorization: `Bearer ${whopToken}` },
-  });
-  if (!userRes.ok) return res.status(401).json({ error: 'Invalid token' });
-  const whopUser = await userRes.json() as Record<string, any>;
+  let claims: Record<string, any>;
+  try {
+    claims = decodeJwt(whopToken);
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
 
-  const membershipRes = await fetch('https://api.whop.com/v5/me/memberships', {
-    headers: { Authorization: `Bearer ${whopToken}` },
-  });
+  const userId = claims.sub;
+  if (!userId) return res.status(401).json({ error: 'Invalid token' });
+
+  const membershipRes = await fetch(
+    `https://api.whop.com/v5/memberships?user_id=${userId}`,
+    { headers: { Authorization: `Bearer ${WHOP_API_KEY}` } }
+  );
+
+  if (!membershipRes.ok) {
+    return res.status(403).json({ error: 'Membership check failed' });
+  }
+
   const membershipData = await membershipRes.json() as Record<string, any>;
   const activeMembership = membershipData.data?.find(
     (m: any) => m.status === 'active' || m.status === 'trialing'
@@ -29,10 +45,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   return res.status(200).json({
-    id: whopUser.id,
-    email: whopUser.email,
-    username: whopUser.username,
-    planType: activeMembership.status === 'trialing' ? 'trial' : activeMembership.plan?.billing_period === 'yearly' ? 'annual' : 'monthly',
+    id: userId,
+    email: claims.email ?? '',
+    username: claims.preferred_username ?? userId,
+    planType: activeMembership.status === 'trialing' ? 'trial' :
+              activeMembership.plan?.billing_period === 'yearly' ? 'annual' : 'monthly',
     trialEndsAt: activeMembership.trial_ends_at ?? null,
     memberSince: activeMembership.created_at,
   });
