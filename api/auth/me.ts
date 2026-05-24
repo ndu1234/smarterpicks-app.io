@@ -26,19 +26,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = claims.sub;
   if (!userId) return res.status(401).json({ error: 'Invalid token' });
 
+  console.log('Checking membership for userId:', userId);
+  console.log('WHOP_API_KEY set:', !!WHOP_API_KEY);
+
   const membershipRes = await fetch(
     `https://api.whop.com/v5/memberships?user_id=${userId}`,
     { headers: { Authorization: `Bearer ${WHOP_API_KEY}` } }
   );
 
+  const membershipBody = await membershipRes.text();
+  console.log('Membership API status:', membershipRes.status);
+  console.log('Membership API response:', membershipBody);
+
   if (!membershipRes.ok) {
-    return res.status(403).json({ error: 'Membership check failed' });
+    return res.status(403).json({ error: 'Membership check failed', detail: membershipBody });
   }
 
-  const membershipData = await membershipRes.json() as Record<string, any>;
+  const membershipData = JSON.parse(membershipBody) as Record<string, any>;
   const activeMembership = membershipData.data?.find(
     (m: any) => m.status === 'active' || m.status === 'trialing'
   );
+
+  console.log('Total memberships found:', membershipData.data?.length ?? 0);
+  console.log('Active membership:', activeMembership?.id ?? 'none');
 
   if (!activeMembership) {
     return res.status(403).json({ error: 'No active membership' });
