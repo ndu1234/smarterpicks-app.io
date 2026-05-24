@@ -29,17 +29,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Checking membership for userId:', userId);
   console.log('WHOP_API_KEY set:', !!WHOP_API_KEY);
 
+  // Try v5 memberships with company API key
   const membershipRes = await fetch(
-    `https://api.whop.com/v5/memberships?user_id=${userId}`,
-    { headers: { Authorization: `Bearer ${WHOP_API_KEY}` } }
+    `https://api.whop.com/v5/memberships?user_id=${userId}&page_size=10`,
+    { headers: { Authorization: `Bearer ${WHOP_API_KEY}`, 'Content-Type': 'application/json' } }
   );
 
   const membershipBody = await membershipRes.text();
+  console.log('userId:', userId);
   console.log('Membership API status:', membershipRes.status);
-  console.log('Membership API response:', membershipBody);
+  console.log('Membership API response:', membershipBody.substring(0, 500));
 
   if (!membershipRes.ok) {
-    return res.status(403).json({ error: 'Membership check failed', detail: membershipBody });
+    // Fallback: try v2 API
+    const v2Res = await fetch('https://api.whop.com/api/v2/memberships', {
+      headers: { Authorization: `Bearer ${WHOP_API_KEY}`, 'Content-Type': 'application/json' },
+    });
+    const v2Body = await v2Res.text();
+    console.log('v2 fallback status:', v2Res.status, 'body:', v2Body.substring(0, 500));
+    return res.status(403).json({ error: 'Membership check failed', v5: membershipRes.status, v2: v2Res.status });
   }
 
   const membershipData = JSON.parse(membershipBody) as Record<string, any>;
@@ -51,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Active membership:', activeMembership?.id ?? 'none');
 
   if (!activeMembership) {
-    return res.status(403).json({ error: 'No active membership' });
+    return res.status(403).json({ error: 'No active membership', total: membershipData.data?.length ?? 0 });
   }
 
   return res.status(200).json({
