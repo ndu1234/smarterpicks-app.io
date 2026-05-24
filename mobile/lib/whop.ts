@@ -60,6 +60,13 @@ export async function exchangeCodeForToken(
     code_verifier: codeVerifier,
   });
 
+  console.log('Sending to Whop token endpoint:', {
+    client_id: WHOP_CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    code: code.substring(0, 10) + '...',
+    code_verifier: codeVerifier.substring(0, 10) + '...',
+  });
+
   const res = await fetch('https://api.whop.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -67,8 +74,10 @@ export async function exchangeCodeForToken(
   });
 
   if (!res.ok) {
+    const status = res.status;
     const err = await res.text();
-    throw new Error(err);
+    console.log(`Whop token error ${status}:`, err);
+    throw new Error(`${status}: ${err}`);
   }
 
   return res.json();
