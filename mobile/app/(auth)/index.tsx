@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
@@ -17,13 +17,13 @@ export default function LoginScreen() {
   const [loading, setLocalLoading] = useState(false);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [codeVerifier, setCodeVerifier] = useState<string | null>(null);
+  const codeVerifierRef = useRef<string | null>(null);
 
   async function handleLoginPress() {
     try {
       setLocalLoading(true);
       const { url, codeVerifier: verifier } = await buildWhopAuthUrl();
-      setCodeVerifier(verifier);
+      codeVerifierRef.current = verifier;
       setAuthUrl(url);
       setShowModal(true);
     } catch (e) {
@@ -35,12 +35,15 @@ export default function LoginScreen() {
 
   async function handleCode(code: string) {
     setShowModal(false);
+    const verifier = codeVerifierRef.current;
+    console.log('code:', code.substring(0, 12) + '...');
+    console.log('code_verifier:', verifier ? verifier.substring(0, 12) + '...' : 'NULL ← PROBLEM');
     try {
       setLoading(true);
       const tokenRes = await fetch(`${API_BASE}/api/auth/whop/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, code_verifier: codeVerifier }),
+        body: JSON.stringify({ code, code_verifier: verifier }),
       });
       if (!tokenRes.ok) throw new Error(await tokenRes.text());
       const tokenData = await tokenRes.json();
