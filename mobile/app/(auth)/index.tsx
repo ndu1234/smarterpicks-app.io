@@ -39,13 +39,14 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       const tokenData = await exchangeCodeForToken(code, verifier!);
+      console.log('Token data from Whop:', JSON.stringify(tokenData));
       await storage.setAccessToken(tokenData.access_token);
       if (tokenData.refresh_token) await storage.setRefreshToken(tokenData.refresh_token);
       const me = await api.auth.me();
       setMember(me);
       router.replace('/(tabs)');
     } catch (e) {
-      console.error('Token exchange failed:', e);
+      console.error('Post-token failed:', e);
     } finally {
       setLoading(false);
     }
