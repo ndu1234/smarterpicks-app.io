@@ -7,7 +7,7 @@ import { WhopAuthModal } from '@/components/auth/WhopAuthModal';
 import { storage } from '@/lib/storage';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
-import { buildWhopAuthUrl } from '@/lib/whop';
+import { buildWhopAuthUrl, exchangeCodeForToken } from '@/lib/whop';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
 
@@ -36,17 +36,9 @@ export default function LoginScreen() {
   async function handleCode(code: string) {
     setShowModal(false);
     const verifier = codeVerifierRef.current;
-    console.log('code:', code.substring(0, 12) + '...');
-    console.log('code_verifier:', verifier ? verifier.substring(0, 12) + '...' : 'NULL ← PROBLEM');
     try {
       setLoading(true);
-      const tokenRes = await fetch(`${API_BASE}/api/auth/whop/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, code_verifier: verifier }),
-      });
-      if (!tokenRes.ok) throw new Error(await tokenRes.text());
-      const tokenData = await tokenRes.json();
+      const tokenData = await exchangeCodeForToken(code, verifier!);
       await storage.setAccessToken(tokenData.access_token);
       if (tokenData.refresh_token) await storage.setRefreshToken(tokenData.refresh_token);
       const me = await api.auth.me();

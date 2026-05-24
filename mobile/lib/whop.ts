@@ -48,6 +48,32 @@ export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: s
   return { url: finalUrl, codeVerifier };
 }
 
+export async function exchangeCodeForToken(
+  code: string,
+  codeVerifier: string
+): Promise<{ access_token: string; refresh_token: string }> {
+  const params = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    client_id: WHOP_CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    code_verifier: codeVerifier,
+  });
+
+  const res = await fetch('https://api.whop.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+
+  return res.json();
+}
+
 export async function refreshWhopToken(refreshToken: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_BASE}/api/auth/whop/refresh`, {
