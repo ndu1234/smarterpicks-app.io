@@ -4,6 +4,7 @@ const KEYS = {
   accessToken: 'sp_access_token',
   refreshToken: 'sp_refresh_token',
   pushToken: 'sp_push_token',
+  member: 'sp_member',
 } as const;
 
 export const storage = {
@@ -25,11 +26,19 @@ export const storage = {
   async getPushToken(): Promise<string | null> {
     return SecureStore.getItemAsync(KEYS.pushToken);
   },
+  async setMember(member: object) {
+    await SecureStore.setItemAsync(KEYS.member, JSON.stringify(member));
+  },
+  async getMember<T>(): Promise<T | null> {
+    const data = await SecureStore.getItemAsync(KEYS.member);
+    return data ? JSON.parse(data) : null;
+  },
   async clearAll() {
     await Promise.all([
       SecureStore.deleteItemAsync(KEYS.accessToken),
       SecureStore.deleteItemAsync(KEYS.refreshToken),
       SecureStore.deleteItemAsync(KEYS.pushToken),
+      SecureStore.deleteItemAsync(KEYS.member),
     ]);
   },
 };

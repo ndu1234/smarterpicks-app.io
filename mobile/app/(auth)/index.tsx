@@ -42,6 +42,7 @@ export default function LoginScreen() {
       await storage.setAccessToken(tokenData.access_token);
       if (tokenData.refresh_token) await storage.setRefreshToken(tokenData.refresh_token);
       const me = await api.auth.me();
+      await storage.setMember(me);
       setMember(me);
       router.replace('/(tabs)');
     } catch {
