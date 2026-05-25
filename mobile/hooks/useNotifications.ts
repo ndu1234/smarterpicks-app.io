@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { storage } from '@/lib/storage';
 import { api } from '@/lib/api';
@@ -52,13 +53,23 @@ async function registerForPushNotifications() {
     });
   }
 
-  const cached = await storage.getPushToken();
-  const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync();
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId || projectId === 'YOUR_EAS_PROJECT_ID') {
+    console.log('Push notifications: EAS projectId not configured, skipping.');
+    return;
+  }
 
-  if (expoPushToken && expoPushToken !== cached) {
-    await storage.setPushToken(expoPushToken);
-    try {
-      await api.auth.registerPushToken(expoPushToken);
-    } catch {}
+  const cached = await storage.getPushToken();
+  try {
+    const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync({ projectId });
+
+    if (expoPushToken && expoPushToken !== cached) {
+      await storage.setPushToken(expoPushToken);
+      try {
+        await api.auth.registerPushToken(expoPushToken);
+      } catch {}
+    }
+  } catch (e) {
+    console.log('Push token fetch failed (non-fatal):', e);
   }
 }
