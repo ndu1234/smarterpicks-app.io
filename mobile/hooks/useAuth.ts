@@ -1,31 +1,13 @@
-import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { storage } from '@/lib/storage';
-import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 
 export function useAuth() {
   const { member, isLoading, setMember, setLoading } = useAuthStore();
   const router = useRouter();
 
-  useEffect(() => {
-    async function init() {
-      try {
-        const token = await storage.getAccessToken();
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-        const me = await api.auth.me();
-        setMember(me);
-      } catch {
-        await storage.clearAll();
-      } finally {
-        setLoading(false);
-      }
-    }
-    init();
-  }, []);
+  // Auth is bootstrapped at the root _layout.tsx level.
+  // This hook only exposes state + signOut.
 
   async function signOut() {
     await storage.clearAll();
