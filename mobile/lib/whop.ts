@@ -40,6 +40,7 @@ export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: s
     nonce,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
+    prompt: 'login',
   });
 
   const finalUrl = `https://api.whop.com/oauth/authorize?${params.toString()}`;
