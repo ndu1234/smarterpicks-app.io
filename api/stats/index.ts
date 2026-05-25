@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireAuth } from '../_middleware';
-import { db } from '../_db';
+
+const GITHUB_BASE = 'https://raw.githubusercontent.com/Toyota2Lambo/SMARTERPICKS/main';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).end();
@@ -8,56 +9,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const token = requireAuth(req);
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-  const [overall, bySport] = await Promise.all([
-    db`
-      SELECT
-        COUNT(*) FILTER (WHERE result = 'win')::int  AS wins,
-        COUNT(*) FILTER (WHERE result = 'loss')::int AS losses,
-        COUNT(*) FILTER (WHERE result = 'push')::int AS pushes,
-        COUNT(*) FILTER (WHERE result != 'pending')::int AS total_picks,
-        COALESCE(SUM(CASE WHEN result = 'win' THEN units WHEN result = 'loss' THEN -units ELSE 0 END), 0)::float AS units_profit
-      FROM picks
-      WHERE result != 'pending'
-    `,
-    db`
-      SELECT
-        sport,
-        COUNT(*) FILTER (WHERE result = 'win')::int  AS wins,
-        COUNT(*) FILTER (WHERE result = 'loss')::int AS losses,
-        COUNT(*) FILTER (WHERE result = 'push')::int AS pushes,
-        COALESCE(SUM(CASE WHEN result = 'win' THEN units WHEN result = 'loss' THEN -units ELSE 0 END), 0)::float AS units_profit
-      FROM picks
-      WHERE result != 'pending'
-      GROUP BY sport
-      ORDER BY sport
-    `,
-  ]);
+  const githubRes = await fetch(`${GITHUB_BASE}/history.json`);
+  if (!githubRes.ok) return res.status(502).json({ error: 'Failed to fetch stats' });
 
-  const o = overall.rows[0];
-  const totalBets = o.wins + o.losses;
-  const roi = totalBets > 0 ? (o.units_profit / totalBets) * 100 : 0;
+  const data = await githubRes.json() as Record<string, any>;
+  const s = data.stats || {};
+  const daily: any[] = data.daily || [];
 
-  const sportBreakdown = bySport.rows.map((s: any) => {
-    const tb = s.wins + s.losses;
-    return {
-      sport: s.sport,
-      wins: s.wins,
-      losses: s.losses,
-      pushes: s.pushes,
-      unitsProfit: s.units_profit,
-      roi: tb > 0 ? (s.units_profit / tb) * 100 : 0,
-    };
-  });
+  // Build monthly data by grouping daily entries
+  const monthlyMap: Record<string, number> = {};
+  for (const d of daily) {
+    const month = d.date.substring(0, 7); // "2026-04"
+    monthlyMap[month] = (monthlyMap[month] || 0) + d.units;
+  }
+  const monthlyData = Object.entries(monthlyMap).map(([month, unitsProfit]) => ({
+    month,
+    unitsProfit: parseFloat(unitsProfit.toFixed(2)),
+  }));
 
   return res.status(200).json({
-    wins: o.wins,
-    losses: o.losses,
-    pushes: o.pushes,
-    totalPicks: o.total_picks,
-    roi: parseFloat(roi.toFixed(2)),
-    unitsProfit: o.units_profit,
-    dollarProfit: o.units_profit * 100,
-    sportBreakdown,
-    monthlyData: [],
+    wins: s.wins || 0,
+    losses: s.losses || 0,
+    pushes: s.pushes || 0,
+    totalPicks: s.total_picks || 0,
+    roi: s.roi_pct || 0,
+    unitsProfit: s.net_units || 0,
+    dollarProfit: (s.net_units || 0) * 100,
+    sportBreakdown: [],
+    monthlyData,
+    daily,
   });
 }
