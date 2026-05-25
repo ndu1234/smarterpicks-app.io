@@ -61,6 +61,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     result: 'pending',
     resultDescription: null,
     postedAt: data.generated_at || new Date().toISOString(),
+    book: p.book || null,
+    gameTime: p.time || null,
   }));
 
   return res.status(200).json({ picks, publishedAt: data.generated_at });

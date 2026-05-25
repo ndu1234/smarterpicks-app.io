@@ -17,6 +17,8 @@ export interface Pick {
   result: PickResult;
   resultDescription?: string;
   postedAt: string;
+  book?: string;
+  gameTime?: string;
 }
 
 export interface DailyCard {
