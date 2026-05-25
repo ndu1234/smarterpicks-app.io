@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { GoldButton } from '@/components/ui/GoldButton';
@@ -9,47 +9,60 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import { buildWhopAuthUrl, exchangeCodeForToken } from '@/lib/whop';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
-
 export default function LoginScreen() {
   const router = useRouter();
   const { setMember, setLoading } = useAuthStore();
-  const [loading, setLocalLoading] = useState(false);
+  const [buttonLoading, setButtonLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const codeVerifierRef = useRef<string | null>(null);
 
   async function handleLoginPress() {
     try {
-      setLocalLoading(true);
+      setButtonLoading(true);
       const { url, codeVerifier: verifier } = await buildWhopAuthUrl();
       codeVerifierRef.current = verifier;
       setAuthUrl(url);
       setShowModal(true);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      Alert.alert('Error', 'Could not open sign-in. Please try again.');
     } finally {
-      setLocalLoading(false);
+      setButtonLoading(false);
     }
   }
 
   async function handleCode(code: string) {
     setShowModal(false);
+    setProcessing(true);
     const verifier = codeVerifierRef.current;
     try {
       setLoading(true);
       const tokenData = await exchangeCodeForToken(code, verifier!);
-      console.log('Token data from Whop:', JSON.stringify(tokenData));
       await storage.setAccessToken(tokenData.access_token);
       if (tokenData.refresh_token) await storage.setRefreshToken(tokenData.refresh_token);
       const me = await api.auth.me();
       setMember(me);
       router.replace('/(tabs)');
-    } catch (e) {
-      console.error('Post-token failed:', e);
-    } finally {
+    } catch {
+      setProcessing(false);
       setLoading(false);
+      Alert.alert(
+        'Sign In Failed',
+        'Something went wrong. Please try again.',
+        [{ text: 'Try Again', onPress: handleLoginPress }]
+      );
     }
+  }
+
+  if (processing) {
+    return (
+      <View style={styles.processingScreen}>
+        <Text style={styles.diamond}>◆</Text>
+        <ActivityIndicator color={Colors.accent} size="large" style={{ marginTop: 24 }} />
+        <Text style={styles.processingText}>Signing you in…</Text>
+      </View>
+    );
   }
 
   return (
@@ -82,7 +95,7 @@ export default function LoginScreen() {
         <GoldButton
           label="Sign in with Whop →"
           onPress={handleLoginPress}
-          loading={loading}
+          loading={buttonLoading}
         />
         <Text style={styles.legal}>
           Members only. Start your 7-day free trial at smarterpicks.io
@@ -107,6 +120,19 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  processingScreen: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  processingText: {
+    fontFamily: Fonts.body,
+    fontSize: 15,
+    color: Colors.textDim,
+    marginTop: 16,
+    letterSpacing: 0.5,
+  },
   screen: {
     flex: 1,
     backgroundColor: Colors.bg,
