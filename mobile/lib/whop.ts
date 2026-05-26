@@ -44,8 +44,6 @@ export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: s
   });
 
   const finalUrl = `https://api.whop.com/oauth/authorize?${params.toString()}`;
-  console.log('Auth URL:', finalUrl);
-
   return { url: finalUrl, codeVerifier };
 }
 
@@ -61,12 +59,6 @@ export async function exchangeCodeForToken(
     code_verifier: codeVerifier,
   });
 
-  console.log('Sending to Whop token endpoint:', {
-    client_id: WHOP_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    code: code.substring(0, 10) + '...',
-    code_verifier: codeVerifier.substring(0, 10) + '...',
-  });
 
   const res = await fetch('https://api.whop.com/oauth/token', {
     method: 'POST',
