@@ -47,6 +47,7 @@ export const storage = {
       SecureStore.deleteItemAsync(KEYS.refreshToken),
       SecureStore.deleteItemAsync(KEYS.pushToken),
       SecureStore.deleteItemAsync(KEYS.member),
+      SecureStore.deleteItemAsync(KEYS.sportPrefs),
     ]);
   },
 };

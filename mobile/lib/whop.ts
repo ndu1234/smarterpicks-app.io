@@ -5,11 +5,9 @@ export const API_BASE = process.env.EXPO_PUBLIC_API_URL!;
 export const REDIRECT_URI = `${API_BASE}/api/auth/callback`;
 export const APP_SCHEME = 'smarterpicks://oauth';
 
-function generateCodeVerifier(): string {
-  const array = new Uint8Array(32);
-  for (let i = 0; i < array.length; i++) {
-    array[i] = Math.floor(Math.random() * 256);
-  }
+function generateSecureBase64url(byteLength: number): string {
+  const array = new Uint8Array(byteLength);
+  Crypto.getRandomValues(array);
   return btoa(String.fromCharCode(...array))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -25,11 +23,11 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
   return digest.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: string }> {
-  const codeVerifier = generateCodeVerifier();
+export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: string; state: string }> {
+  const codeVerifier = generateSecureBase64url(32);
   const codeChallenge = await generateCodeChallenge(codeVerifier);
-  const state = Math.random().toString(36).substring(2, 18);
-  const nonce = Math.random().toString(36).substring(2, 18);
+  const state = generateSecureBase64url(16);
+  const nonce = generateSecureBase64url(16);
 
   const params = new URLSearchParams({
     client_id: WHOP_CLIENT_ID,
@@ -44,7 +42,7 @@ export async function buildWhopAuthUrl(): Promise<{ url: string; codeVerifier: s
   });
 
   const finalUrl = `https://api.whop.com/oauth/authorize?${params.toString()}`;
-  return { url: finalUrl, codeVerifier };
+  return { url: finalUrl, codeVerifier, state };
 }
 
 export async function exchangeCodeForToken(
@@ -67,10 +65,7 @@ export async function exchangeCodeForToken(
   });
 
   if (!res.ok) {
-    const status = res.status;
-    const err = await res.text();
-    console.log(`Whop token error ${status}:`, err);
-    throw new Error(`${status}: ${err}`);
+    throw new Error(`Token exchange failed: ${res.status}`);
   }
 
   return res.json();

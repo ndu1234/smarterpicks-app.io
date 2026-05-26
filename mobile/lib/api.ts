@@ -21,6 +21,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     if (refreshToken) {
       token = await refreshWhopToken(refreshToken);
       if (token) {
+        await storage.setAccessToken(token);
         const retried = await fetch(`${API_BASE}${path}`, {
           ...options,
           headers: {

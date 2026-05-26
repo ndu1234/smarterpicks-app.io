@@ -6,11 +6,12 @@ import { REDIRECT_URI } from '@/lib/whop';
 
 interface Props {
   authUrl: string;
+  expectedState: string;
   onCode: (code: string) => void;
   onCancel: () => void;
 }
 
-export function WhopAuthModal({ authUrl, onCode, onCancel }: Props) {
+export function WhopAuthModal({ authUrl, expectedState, onCode, onCancel }: Props) {
   const [loading, setLoading] = useState(true);
 
   function tryExtractCode(url: string): boolean {
@@ -18,9 +19,14 @@ export function WhopAuthModal({ authUrl, onCode, onCancel }: Props) {
     try {
       const parsed = new URL(url);
       const code = parsed.searchParams.get('code');
+      const state = parsed.searchParams.get('state');
       const error = parsed.searchParams.get('error');
-      if (code) { onCode(code); return true; }
       if (error) { onCancel(); return true; }
+      if (code) {
+        if (state !== expectedState) { onCancel(); return true; }
+        onCode(code);
+        return true;
+      }
     } catch {}
     return false;
   }

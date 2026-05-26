@@ -17,12 +17,14 @@ export default function LoginScreen() {
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const codeVerifierRef = useRef<string | null>(null);
+  const stateRef = useRef<string | null>(null);
 
   async function handleLoginPress() {
     try {
       setButtonLoading(true);
-      const { url, codeVerifier: verifier } = await buildWhopAuthUrl();
+      const { url, codeVerifier: verifier, state } = await buildWhopAuthUrl();
       codeVerifierRef.current = verifier;
+      stateRef.current = state;
       setAuthUrl(url);
       setShowModal(true);
     } catch {
@@ -114,9 +116,10 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {showModal && authUrl && (
+      {showModal && authUrl && stateRef.current && (
         <WhopAuthModal
           authUrl={authUrl}
+          expectedState={stateRef.current}
           onCode={handleCode}
           onCancel={() => setShowModal(false)}
         />
