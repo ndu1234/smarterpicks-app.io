@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: Fonts.mono,
     fontSize: 12,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     color: Colors.textMuted,
   },
   labelActive: {
