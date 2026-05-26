@@ -97,7 +97,7 @@ export default function OnboardingScreen() {
 
   async function finish() {
     await storage.setOnboardingSeen();
-    router.replace('/(auth)');
+    router.replace('/(auth)/sports');
   }
 
   function next() {

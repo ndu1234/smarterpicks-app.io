@@ -36,9 +36,8 @@ export default function Index() {
             return;
           }
         }
-        // No valid token — check if onboarding has been seen
-        const seen = await storage.getOnboardingSeen();
-        router.replace(seen ? '/(auth)' : '/(auth)/onboarding');
+        // No valid token — go to login
+        router.replace('/(auth)');
       } catch {
         await storage.clearAll();
         router.replace('/(auth)');

@@ -46,11 +46,12 @@ export default function LoginScreen() {
       const me = await api.auth.me();
       await storage.setMember(me);
       setMember(me);
-      const prefs = await storage.getSportPrefs();
-      if (prefs) {
-        router.replace('/(tabs)');
+      const seen = await storage.getOnboardingSeen();
+      if (!seen) {
+        router.replace('/(auth)/onboarding');
       } else {
-        router.replace('/(auth)/sports');
+        const prefs = await storage.getSportPrefs();
+        router.replace(prefs ? '/(tabs)' : '/(auth)/sports');
       }
     } catch {
       setProcessing(false);
