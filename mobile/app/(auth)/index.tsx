@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Animated, Dimensions } from 'react-native';
+import {
+  View, Text, StyleSheet, ActivityIndicator,
+  Alert, Animated, Dimensions,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { GoldButton } from '@/components/ui/GoldButton';
@@ -11,85 +14,84 @@ import { buildWhopAuthUrl, exchangeCodeForToken } from '@/lib/whop';
 
 const { width, height } = Dimensions.get('window');
 
-// Diamond positions scattered around the screen
-const DIAMONDS = [
-  { top: 0.06, left: 0.08,  size: 8,  duration: 2200, delay: 0 },
-  { top: 0.12, left: 0.75,  size: 5,  duration: 2800, delay: 400 },
-  { top: 0.18, left: 0.45,  size: 10, duration: 2000, delay: 200 },
-  { top: 0.24, left: 0.88,  size: 6,  duration: 3000, delay: 800 },
-  { top: 0.30, left: 0.05,  size: 7,  duration: 2400, delay: 600 },
-  { top: 0.38, left: 0.62,  size: 4,  duration: 2600, delay: 300 },
-  { top: 0.48, left: 0.92,  size: 9,  duration: 1900, delay: 700 },
-  { top: 0.52, left: 0.02,  size: 5,  duration: 2700, delay: 100 },
-  { top: 0.60, left: 0.80,  size: 7,  duration: 2300, delay: 500 },
-  { top: 0.66, left: 0.18,  size: 6,  duration: 2500, delay: 900 },
-  { top: 0.74, left: 0.55,  size: 8,  duration: 2100, delay: 200 },
-  { top: 0.80, left: 0.90,  size: 4,  duration: 2900, delay: 650 },
-  { top: 0.86, left: 0.30,  size: 6,  duration: 2200, delay: 350 },
-  { top: 0.10, left: 0.30,  size: 5,  duration: 3100, delay: 750 },
-  { top: 0.44, left: 0.40,  size: 4,  duration: 2400, delay: 450 },
-];
+// Each floating diamond drifts between two random points
+const DIAMONDS = Array.from({ length: 18 }, (_, i) => ({
+  id: i,
+  startX: Math.random() * width,
+  startY: Math.random() * height,
+  endX: Math.random() * width,
+  endY: Math.random() * height,
+  size: 6 + Math.random() * 8,
+  duration: 4000 + Math.random() * 5000,
+  delay: Math.random() * 3000,
+  opacity: 0.15 + Math.random() * 0.45,
+}));
 
-function GlowDiamond({
-  top, left, size, duration, delay,
-}: {
-  top: number; left: number; size: number; duration: number; delay: number;
-}) {
+function FloatingDiamond({
+  startX, startY, endX, endY,
+  size, duration, delay, opacity: maxOpacity,
+}: typeof DIAMONDS[0]) {
+  const x = useRef(new Animated.Value(startX)).current;
+  const y = useRef(new Animated.Value(startY)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.6)).current;
 
   useEffect(() => {
-    const anim = Animated.loop(
+    // Drift: float to end, then back, looping forever
+    const drift = Animated.loop(
       Animated.sequence([
-        Animated.delay(delay),
         Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 0.7,
-            duration,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration,
-            useNativeDriver: true,
-          }),
+          Animated.timing(x, { toValue: endX, duration, useNativeDriver: true }),
+          Animated.timing(y, { toValue: endY, duration, useNativeDriver: true }),
+          Animated.sequence([
+            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: maxOpacity * 0.3, duration: duration * 0.2, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
+          ]),
         ]),
         Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 0.05,
-            duration,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 0.5,
-            duration,
-            useNativeDriver: true,
-          }),
+          Animated.timing(x, { toValue: startX, duration, useNativeDriver: true }),
+          Animated.timing(y, { toValue: startY, duration, useNativeDriver: true }),
+          Animated.sequence([
+            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: maxOpacity * 0.3, duration: duration * 0.2, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
+          ]),
         ]),
       ])
     );
-    anim.start();
-    return () => anim.stop();
+
+    const timeout = setTimeout(() => drift.start(), delay);
+    return () => {
+      clearTimeout(timeout);
+      drift.stop();
+    };
   }, []);
 
   return (
     <Animated.Text
       style={{
         position: 'absolute',
-        top: top * height,
-        left: left * width,
         fontSize: size,
         color: Colors.accent,
         opacity,
-        transform: [{ scale }],
-        // Glow effect via shadow
+        transform: [{ translateX: x }, { translateY: y }],
         textShadowColor: Colors.accent,
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: size * 2,
+        textShadowRadius: size * 2.5,
       }}
     >
       ◆
     </Animated.Text>
+  );
+}
+
+function DiamondField() {
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      {DIAMONDS.map((d) => (
+        <FloatingDiamond key={d.id} {...d} />
+      ))}
+    </View>
   );
 }
 
@@ -104,19 +106,19 @@ export default function LoginScreen() {
   const stateRef = useRef<string | null>(null);
 
   // Pulsing main diamond
-  const mainPulse = useRef(new Animated.Value(1)).current;
-  const mainGlow = useRef(new Animated.Value(0.6)).current;
+  const mainScale = useRef(new Animated.Value(1)).current;
+  const mainOpacity = useRef(new Animated.Value(0.7)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.parallel([
-          Animated.timing(mainPulse, { toValue: 1.15, duration: 1400, useNativeDriver: true }),
-          Animated.timing(mainGlow, { toValue: 1, duration: 1400, useNativeDriver: true }),
+          Animated.timing(mainScale, { toValue: 1.18, duration: 1500, useNativeDriver: true }),
+          Animated.timing(mainOpacity, { toValue: 1, duration: 1500, useNativeDriver: true }),
         ]),
         Animated.parallel([
-          Animated.timing(mainPulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
-          Animated.timing(mainGlow, { toValue: 0.6, duration: 1400, useNativeDriver: true }),
+          Animated.timing(mainScale, { toValue: 1, duration: 1500, useNativeDriver: true }),
+          Animated.timing(mainOpacity, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
         ]),
       ])
     ).start();
@@ -170,9 +172,15 @@ export default function LoginScreen() {
   if (processing) {
     return (
       <View style={styles.processingScreen}>
+        <DiamondField />
         <Animated.Text
-          style={[styles.mainDiamond, { transform: [{ scale: mainPulse }], opacity: mainGlow,
-            textShadowColor: Colors.accent, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 24 }]}
+          style={[styles.mainDiamond, {
+            transform: [{ scale: mainScale }],
+            opacity: mainOpacity,
+            textShadowColor: Colors.accent,
+            textShadowOffset: { width: 0, height: 0 },
+            textShadowRadius: 30,
+          }]}
         >
           ◆
         </Animated.Text>
@@ -184,12 +192,10 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Floating glowing diamonds */}
-      {DIAMONDS.map((d, i) => (
-        <GlowDiamond key={i} {...d} />
-      ))}
+      {/* Live floating diamonds */}
+      <DiamondField />
 
-      {/* Subtle radial glow behind hero */}
+      {/* Soft warm center glow */}
       <View style={styles.centerGlow} pointerEvents="none" />
 
       {/* Gold top bar */}
@@ -198,16 +204,13 @@ export default function LoginScreen() {
       {/* Hero */}
       <View style={styles.hero}>
         <Animated.Text
-          style={[
-            styles.mainDiamond,
-            {
-              transform: [{ scale: mainPulse }],
-              opacity: mainGlow,
-              textShadowColor: Colors.accent,
-              textShadowOffset: { width: 0, height: 0 },
-              textShadowRadius: 28,
-            },
-          ]}
+          style={[styles.mainDiamond, {
+            transform: [{ scale: mainScale }],
+            opacity: mainOpacity,
+            textShadowColor: Colors.accent,
+            textShadowOffset: { width: 0, height: 0 },
+            textShadowRadius: 30,
+          }]}
         >
           ◆
         </Animated.Text>
@@ -284,10 +287,10 @@ const styles = StyleSheet.create({
   },
   centerGlow: {
     position: 'absolute',
-    top: height * 0.2,
-    left: width * 0.15,
-    width: width * 0.7,
-    height: height * 0.35,
+    top: height * 0.18,
+    left: width * 0.1,
+    width: width * 0.8,
+    height: height * 0.4,
     borderRadius: 999,
     backgroundColor: Colors.accent,
     opacity: 0.05,
@@ -304,7 +307,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   mainDiamond: {
-    fontSize: 44,
+    fontSize: 48,
     color: Colors.accent,
   },
   wordmark: {
