@@ -11,7 +11,7 @@ interface Props {
 
 export function FilterBar({ selected, onSelect }: Props) {
   return (
-    <View style={styles.container}>
+    <View style={styles.sidebar}>
       {SPORTS.map((sport) => {
         const active = selected === sport;
         return (
@@ -30,18 +30,17 @@ export function FilterBar({ selected, onSelect }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.md,
+  sidebar: {
+    width: 64,
     paddingVertical: Spacing.sm,
+    paddingLeft: Spacing.sm,
     gap: 8,
   },
   tab: {
-    flex: 1,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 8,
-    paddingVertical: 8,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -51,7 +50,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textMuted,
   },
   labelActive: {

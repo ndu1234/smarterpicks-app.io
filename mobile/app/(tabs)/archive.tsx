@@ -43,29 +43,31 @@ export default function ArchiveScreen() {
         <Text style={styles.subtitle}>{data?.total ?? 0} picks publicly logged</Text>
       </View>
 
-      <FilterBar selected={sport} onSelect={setSport} />
+      <View style={styles.body}>
+        <FilterBar selected={sport} onSelect={setSport} />
 
-      {isLoading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator color={Colors.accent} />
-        </View>
-      ) : (
-        <FlatList
-          data={grouped}
-          keyExtractor={(g) => g.date}
-          renderItem={({ item: group }) => (
-            <View style={styles.group}>
-              <SectionHeader date={group.date} />
-              {group.items.map((pick) => (
-                <View key={pick.id} style={{ marginBottom: Spacing.sm }}>
-                  <PickCard pick={pick} showResult />
-                </View>
-              ))}
-            </View>
-          )}
-          contentContainerStyle={styles.list}
-        />
-      )}
+        {isLoading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={Colors.accent} />
+          </View>
+        ) : (
+          <FlatList
+            data={grouped}
+            keyExtractor={(g) => g.date}
+            renderItem={({ item: group }) => (
+              <View style={styles.group}>
+                <SectionHeader date={group.date} />
+                {group.items.map((pick) => (
+                  <View key={pick.id} style={{ marginBottom: Spacing.sm }}>
+                    <PickCard pick={pick} showResult />
+                  </View>
+                ))}
+              </View>
+            )}
+            contentContainerStyle={styles.list}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -91,13 +93,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textMuted,
   },
+  body: {
+    flex: 1,
+    flexDirection: 'row',
+  },
   loading: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   list: {
-    padding: Spacing.md,
+    padding: Spacing.sm,
   },
   group: {
     marginBottom: Spacing.lg,
