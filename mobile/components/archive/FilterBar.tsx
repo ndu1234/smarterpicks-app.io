@@ -36,6 +36,7 @@ export function FilterBar({ selected, onSelect }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -43,9 +44,10 @@ const styles = StyleSheet.create({
   pill: {
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 6,
+    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 7,
+    alignSelf: 'flex-start',
   },
   pillActive: {
     borderColor: Colors.accent,
