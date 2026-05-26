@@ -44,7 +44,12 @@ export default function LoginScreen() {
       const me = await api.auth.me();
       await storage.setMember(me);
       setMember(me);
-      router.replace('/(tabs)');
+      const prefs = await storage.getSportPrefs();
+      if (prefs) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/sports');
+      }
     } catch {
       setProcessing(false);
       setLoading(false);

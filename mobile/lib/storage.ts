@@ -5,6 +5,7 @@ const KEYS = {
   refreshToken: 'sp_refresh_token',
   pushToken: 'sp_push_token',
   member: 'sp_member',
+  sportPrefs: 'sp_sport_prefs',
 } as const;
 
 export const storage = {
@@ -31,6 +32,13 @@ export const storage = {
   },
   async getMember<T>(): Promise<T | null> {
     const data = await SecureStore.getItemAsync(KEYS.member);
+    return data ? JSON.parse(data) : null;
+  },
+  async setSportPrefs(sports: string[]) {
+    await SecureStore.setItemAsync(KEYS.sportPrefs, JSON.stringify(sports));
+  },
+  async getSportPrefs(): Promise<string[] | null> {
+    const data = await SecureStore.getItemAsync(KEYS.sportPrefs);
     return data ? JSON.parse(data) : null;
   },
   async clearAll() {

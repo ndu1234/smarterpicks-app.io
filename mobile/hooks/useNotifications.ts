@@ -14,12 +14,18 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Module-level flag — registration runs at most once per app session
+let registered = false;
+
 export function useNotifications() {
   const notificationListener = useRef<Notifications.EventSubscription>();
   const responseListener = useRef<Notifications.EventSubscription>();
 
   useEffect(() => {
-    registerForPushNotifications();
+    if (!registered) {
+      registered = true;
+      registerForPushNotifications();
+    }
 
     notificationListener.current = Notifications.addNotificationReceivedListener(() => {});
     responseListener.current = Notifications.addNotificationResponseReceivedListener(() => {});
@@ -33,6 +39,12 @@ export function useNotifications() {
 
 async function registerForPushNotifications() {
   if (!Device.isDevice) return;
+
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId || projectId === 'YOUR_EAS_PROJECT_ID') {
+    // Push notifications not yet configured — silent skip in dev/Expo Go
+    return;
+  }
 
   const { status: existing } = await Notifications.getPermissionsAsync();
   let finalStatus = existing;
@@ -53,23 +65,12 @@ async function registerForPushNotifications() {
     });
   }
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  if (!projectId || projectId === 'YOUR_EAS_PROJECT_ID') {
-    console.log('Push notifications: EAS projectId not configured, skipping.');
-    return;
-  }
-
   const cached = await storage.getPushToken();
   try {
     const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync({ projectId });
-
     if (expoPushToken && expoPushToken !== cached) {
       await storage.setPushToken(expoPushToken);
-      try {
-        await api.auth.registerPushToken(expoPushToken);
-      } catch {}
+      try { await api.auth.registerPushToken(expoPushToken); } catch {}
     }
-  } catch (e) {
-    console.log('Push token fetch failed (non-fatal):', e);
-  }
+  } catch {}
 }
