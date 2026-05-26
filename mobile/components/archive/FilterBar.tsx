@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
   pill: {
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 2,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
   },
   pillActive: {
     borderColor: Colors.accent,
@@ -53,8 +53,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1.5,
+    fontSize: 12,
+    letterSpacing: 0.5,
     color: Colors.textMuted,
   },
   labelActive: {
