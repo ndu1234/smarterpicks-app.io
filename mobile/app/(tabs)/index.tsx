@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { PickCard } from '@/components/picks/PickCard';
 import { EmptyPickState } from '@/components/picks/EmptyPickState';
+import { SkeletonPickCard } from '@/components/ui/Skeleton';
 import { useTodaysPicks, useSportPrefs } from '@/hooks/usePicks';
 import type { Pick } from '@/constants/types';
 
@@ -100,7 +101,17 @@ export default function TodaysPicksScreen() {
         }}
         contentContainerStyle={[styles.list, !haspicks && styles.listEmpty]}
         ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
-        ListEmptyComponent={isLoading ? null : <EmptyPickState />}
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.skeletons}>
+              {[0, 1, 2].map((i) => (
+                <SkeletonPickCard key={i} />
+              ))}
+            </View>
+          ) : (
+            <EmptyPickState />
+          )
+        }
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -166,6 +177,10 @@ const styles = StyleSheet.create({
   },
   listEmpty: {
     flex: 1,
+  },
+  skeletons: {
+    gap: Spacing.sm,
+    padding: Spacing.md,
   },
   sectionRow: {
     flexDirection: 'row',

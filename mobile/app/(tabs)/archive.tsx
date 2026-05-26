@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, FlatList, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format, parseISO } from 'date-fns';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { PickCard } from '@/components/picks/PickCard';
 import { FilterBar } from '@/components/archive/FilterBar';
+import { SkeletonPickCard } from '@/components/ui/Skeleton';
 import { useArchive } from '@/hooks/usePicks';
 import type { Sport, Pick } from '@/constants/types';
 
@@ -47,8 +48,10 @@ export default function ArchiveScreen() {
         <FilterBar selected={sport} onSelect={setSport} />
 
         {isLoading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator color={Colors.accent} />
+          <View style={styles.skeletons}>
+            {[0, 1, 2].map((i) => (
+              <SkeletonPickCard key={i} />
+            ))}
           </View>
         ) : (
           <FlatList
@@ -97,10 +100,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
   },
-  loading: {
+  skeletons: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: Spacing.sm,
+    gap: Spacing.sm,
   },
   list: {
     padding: Spacing.sm,
