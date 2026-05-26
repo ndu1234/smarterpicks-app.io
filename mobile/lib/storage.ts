@@ -6,6 +6,7 @@ const KEYS = {
   pushToken: 'sp_push_token',
   member: 'sp_member',
   sportPrefs: 'sp_sport_prefs',
+  onboardingSeen: 'sp_onboarding_seen',
 } as const;
 
 export const storage = {
@@ -40,6 +41,13 @@ export const storage = {
   async getSportPrefs(): Promise<string[] | null> {
     const data = await SecureStore.getItemAsync(KEYS.sportPrefs);
     return data ? JSON.parse(data) : null;
+  },
+  async setOnboardingSeen() {
+    await SecureStore.setItemAsync(KEYS.onboardingSeen, '1');
+  },
+  async getOnboardingSeen(): Promise<boolean> {
+    const val = await SecureStore.getItemAsync(KEYS.onboardingSeen);
+    return val === '1';
   },
   async clearAll() {
     await Promise.all([

@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { GoldButton } from '@/components/ui/GoldButton';
 import { storage } from '@/lib/storage';
 
+const { width } = Dimensions.get('window');
+
 const SPORTS = [
-  { key: 'NBA', label: 'NBA', subtitle: 'Basketball' },
-  { key: 'NFL', label: 'NFL', subtitle: 'American Football' },
-  { key: 'MLB', label: 'MLB', subtitle: 'Baseball' },
-  { key: 'NHL', label: 'NHL', subtitle: 'Hockey' },
+  { key: 'NBA', label: 'NBA', logo: '🏀' },
+  { key: 'NFL', label: 'NFL', logo: '🏈' },
+  { key: 'MLB', label: 'MLB', logo: '⚾' },
+  { key: 'NHL', label: 'NHL', logo: '🏒' },
 ];
 
 export default function SportPrefsScreen() {
@@ -25,29 +26,36 @@ export default function SportPrefsScreen() {
   }
 
   async function handleContinue() {
+    if (loading) return;
     setLoading(true);
     const prefs = selected.length > 0 ? selected : SPORTS.map((s) => s.key);
     await storage.setSportPrefs(prefs);
     router.replace('/(tabs)');
   }
 
-  async function handleSkip() {
-    await storage.setSportPrefs(SPORTS.map((s) => s.key));
-    router.replace('/(tabs)');
-  }
-
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.screen}>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+          <View style={styles.logoChip}>
+            <Text style={styles.logoText}>SMARTERPICKS</Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>What sport would you like us to show you the most about on the picks?</Text>
-        <Text style={styles.subtitle}>Select all that apply. You can change this later.</Text>
+        {/* Title */}
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>What do you usually bet on?</Text>
+          <Text style={styles.subtitle}>
+            We'll prioritize predictions and insights for these sports.
+          </Text>
+        </View>
 
+        {/* Sport rows */}
         <View style={styles.list}>
           {SPORTS.map((sport) => {
             const active = selected.includes(sport.key);
@@ -56,33 +64,35 @@ export default function SportPrefsScreen() {
                 key={sport.key}
                 style={[styles.row, active && styles.rowActive]}
                 onPress={() => toggle(sport.key)}
-                activeOpacity={0.7}
+                activeOpacity={0.75}
               >
                 <View style={styles.rowLeft}>
-                  <View style={[styles.sportTag, active && styles.sportTagActive]}>
-                    <Text style={[styles.sportTagText, active && styles.sportTagTextActive]}>
-                      {sport.label}
-                    </Text>
-                  </View>
-                  <Text style={styles.sportSubtitle}>{sport.subtitle}</Text>
+                  <Text style={styles.rowLogo}>{sport.logo}</Text>
+                  <Text style={styles.rowLabel}>{sport.label}</Text>
                 </View>
-                <View style={[styles.check, active && styles.checkActive]}>
-                  {active && <Text style={styles.checkMark}>✓</Text>}
+                <View style={[styles.checkbox, active && styles.checkboxActive]}>
+                  {active && <Text style={styles.checkmark}>✓</Text>}
                 </View>
               </TouchableOpacity>
             );
           })}
         </View>
-      </View>
 
-      <View style={styles.footer}>
-        <GoldButton
-          label={selected.length > 0 ? 'Continue →' : 'Show me everything →'}
-          onPress={handleContinue}
-          loading={loading}
-        />
-      </View>
-    </SafeAreaView>
+        <Text style={styles.hint}>You can change this anytime</Text>
+
+        {/* Continue button */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.7 }]}
+            onPress={handleContinue}
+            activeOpacity={0.85}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>CONTINUE</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -91,39 +101,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bg,
   },
-  header: {
-    alignItems: 'flex-end',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-  },
-  skipBtn: {
-    padding: 8,
-  },
-  skipText: {
-    fontFamily: Fonts.body,
-    fontSize: 15,
-    color: Colors.textDim,
-  },
-  content: {
+  safeArea: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  backArrow: {
+    fontSize: 22,
+    color: Colors.text,
+  },
+  logoChip: {
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  logoText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: Colors.accent,
+  },
+  titleBlock: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    gap: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
+    gap: 8,
   },
   title: {
-    fontFamily: Fonts.display,
-    fontSize: 28,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 26,
     color: Colors.text,
-    lineHeight: 36,
+    lineHeight: 32,
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontFamily: Fonts.body,
     fontSize: 14,
-    color: Colors.textDim,
+    color: Colors.textMuted,
+    lineHeight: 20,
   },
   list: {
+    paddingHorizontal: Spacing.md,
     gap: 10,
-    marginTop: Spacing.md,
   },
   row: {
     flexDirection: 'row',
@@ -133,60 +166,70 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
-    padding: Spacing.md,
+    paddingVertical: 16,
+    paddingHorizontal: Spacing.md,
   },
   rowActive: {
-    borderColor: Colors.accent,
+    borderColor: Colors.accent + '60',
+    backgroundColor: Colors.bgElevated,
   },
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
-  sportTag: {
-    backgroundColor: Colors.bgElevated,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    minWidth: 48,
-    alignItems: 'center',
+  rowLogo: {
+    fontSize: 24,
   },
-  sportTagActive: {
-    backgroundColor: Colors.accent,
-  },
-  sportTagText: {
-    fontFamily: Fonts.mono,
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-  sportTagTextActive: {
-    color: Colors.bg,
-  },
-  sportSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: 15,
+  rowLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 16,
     color: Colors.text,
+    letterSpacing: 0.3,
   },
-  check: {
+  checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkActive: {
+  checkboxActive: {
     backgroundColor: Colors.accent,
     borderColor: Colors.accent,
   },
-  checkMark: {
+  checkmark: {
     color: Colors.bg,
     fontSize: 13,
     fontWeight: '700',
   },
+  hint: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textDim,
+    textAlign: 'center',
+    marginTop: Spacing.lg,
+  },
   footer: {
-    paddingHorizontal: Spacing.lg,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.xl,
+  },
+  button: {
+    backgroundColor: Colors.accent,
+    borderRadius: 14,
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+    letterSpacing: 1.5,
+    color: Colors.bg,
   },
 });

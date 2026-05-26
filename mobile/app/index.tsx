@@ -36,8 +36,9 @@ export default function Index() {
             return;
           }
         }
-        // No valid token or no cached profile — go to sign in
-        router.replace('/(auth)');
+        // No valid token — check if onboarding has been seen
+        const seen = await storage.getOnboardingSeen();
+        router.replace(seen ? '/(auth)' : '/(auth)/onboarding');
       } catch {
         await storage.clearAll();
         router.replace('/(auth)');
