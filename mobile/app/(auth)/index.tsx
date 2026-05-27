@@ -1,8 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ActivityIndicator,
-  Alert, Animated, Dimensions,
+  Alert, Dimensions,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { GoldButton } from '@/components/ui/GoldButton';
@@ -14,71 +23,67 @@ import { buildWhopAuthUrl, exchangeCodeForToken } from '@/lib/whop';
 
 const { width, height } = Dimensions.get('window');
 
-// Each floating diamond drifts between two random points
 const DIAMONDS = Array.from({ length: 18 }, (_, i) => ({
   id: i,
-  startX: Math.random() * width,
-  startY: Math.random() * height,
-  endX: Math.random() * width,
-  endY: Math.random() * height,
-  size: 6 + Math.random() * 8,
+  startX: Math.random() * (width - 20),
+  startY: Math.random() * (height - 20),
+  endX: Math.random() * (width - 20),
+  endY: Math.random() * (height - 20),
+  size: 6 + Math.random() * 9,
   duration: 4000 + Math.random() * 5000,
-  delay: Math.random() * 3000,
-  opacity: 0.15 + Math.random() * 0.45,
+  delay: Math.random() * 2500,
+  maxOpacity: 0.15 + Math.random() * 0.5,
 }));
 
-function FloatingDiamond({
-  startX, startY, endX, endY,
-  size, duration, delay, opacity: maxOpacity,
-}: typeof DIAMONDS[0]) {
-  const x = useRef(new Animated.Value(startX)).current;
-  const y = useRef(new Animated.Value(startY)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+function FloatingDiamond({ startX, startY, endX, endY, size, duration, delay, maxOpacity }: typeof DIAMONDS[0]) {
+  const x = useSharedValue(startX);
+  const y = useSharedValue(startY);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    // Drift: float to end, then back, looping forever
-    const drift = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(x, { toValue: endX, duration, useNativeDriver: true }),
-          Animated.timing(y, { toValue: endY, duration, useNativeDriver: true }),
-          Animated.sequence([
-            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
-            Animated.timing(opacity, { toValue: maxOpacity * 0.3, duration: duration * 0.2, useNativeDriver: true }),
-            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
-          ]),
-        ]),
-        Animated.parallel([
-          Animated.timing(x, { toValue: startX, duration, useNativeDriver: true }),
-          Animated.timing(y, { toValue: startY, duration, useNativeDriver: true }),
-          Animated.sequence([
-            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
-            Animated.timing(opacity, { toValue: maxOpacity * 0.3, duration: duration * 0.2, useNativeDriver: true }),
-            Animated.timing(opacity, { toValue: maxOpacity, duration: duration * 0.4, useNativeDriver: true }),
-          ]),
-        ]),
-      ])
-    );
+    const ease = Easing.inOut(Easing.sin);
 
-    const timeout = setTimeout(() => drift.start(), delay);
-    return () => {
-      clearTimeout(timeout);
-      drift.stop();
-    };
+    x.value = withDelay(delay, withRepeat(
+      withSequence(
+        withTiming(endX, { duration, easing: ease }),
+        withTiming(startX, { duration, easing: ease }),
+      ), -1
+    ));
+
+    y.value = withDelay(delay, withRepeat(
+      withSequence(
+        withTiming(endY, { duration, easing: ease }),
+        withTiming(startY, { duration, easing: ease }),
+      ), -1
+    ));
+
+    opacity.value = withDelay(delay, withRepeat(
+      withSequence(
+        withTiming(maxOpacity, { duration: duration * 0.4 }),
+        withTiming(maxOpacity * 0.2, { duration: duration * 0.2 }),
+        withTiming(maxOpacity, { duration: duration * 0.4 }),
+        withTiming(maxOpacity * 0.2, { duration: duration * 0.4 }),
+        withTiming(maxOpacity, { duration: duration * 0.4 }),
+        withTiming(0, { duration: duration * 0.2 }),
+      ), -1
+    ));
   }, []);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: x.value }, { translateY: y.value }],
+    opacity: opacity.value,
+  }));
 
   return (
     <Animated.Text
-      style={{
+      style={[{
         position: 'absolute',
         fontSize: size,
         color: Colors.accent,
-        opacity,
-        transform: [{ translateX: x }, { translateY: y }],
         textShadowColor: Colors.accent,
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: size * 2.5,
-      }}
+      }, style]}
     >
       ◆
     </Animated.Text>
@@ -88,10 +93,45 @@ function FloatingDiamond({
 function DiamondField() {
   return (
     <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-      {DIAMONDS.map((d) => (
-        <FloatingDiamond key={d.id} {...d} />
-      ))}
+      {DIAMONDS.map((d) => <FloatingDiamond key={d.id} {...d} />)}
     </View>
+  );
+}
+
+function PulsingDiamond({ style: extraStyle }: { style?: object }) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.7);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.18, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+      ), -1
+    );
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1500 }),
+        withTiming(0.7, { duration: 1500 }),
+      ), -1
+    );
+  }, []);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.Text
+      style={[styles.mainDiamond, {
+        textShadowColor: Colors.accent,
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 30,
+      }, style, extraStyle]}
+    >
+      ◆
+    </Animated.Text>
   );
 }
 
@@ -104,25 +144,6 @@ export default function LoginScreen() {
   const [showModal, setShowModal] = useState(false);
   const codeVerifierRef = useRef<string | null>(null);
   const stateRef = useRef<string | null>(null);
-
-  // Pulsing main diamond
-  const mainScale = useRef(new Animated.Value(1)).current;
-  const mainOpacity = useRef(new Animated.Value(0.7)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(mainScale, { toValue: 1.18, duration: 1500, useNativeDriver: true }),
-          Animated.timing(mainOpacity, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(mainScale, { toValue: 1, duration: 1500, useNativeDriver: true }),
-          Animated.timing(mainOpacity, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
-        ]),
-      ])
-    ).start();
-  }, []);
 
   async function handleLoginPress() {
     try {
@@ -173,17 +194,7 @@ export default function LoginScreen() {
     return (
       <View style={styles.processingScreen}>
         <DiamondField />
-        <Animated.Text
-          style={[styles.mainDiamond, {
-            transform: [{ scale: mainScale }],
-            opacity: mainOpacity,
-            textShadowColor: Colors.accent,
-            textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: 30,
-          }]}
-        >
-          ◆
-        </Animated.Text>
+        <PulsingDiamond />
         <ActivityIndicator color={Colors.accent} size="large" style={{ marginTop: 24 }} />
         <Text style={styles.processingText}>Signing you in…</Text>
       </View>
@@ -192,26 +203,11 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Live floating diamonds */}
       <DiamondField />
-
-
-      {/* Gold top bar */}
       <View style={styles.topBar} />
 
-      {/* Hero */}
       <View style={styles.hero}>
-        <Animated.Text
-          style={[styles.mainDiamond, {
-            transform: [{ scale: mainScale }],
-            opacity: mainOpacity,
-            textShadowColor: Colors.accent,
-            textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: 30,
-          }]}
-        >
-          ◆
-        </Animated.Text>
+        <PulsingDiamond />
         <Text style={styles.wordmark}>SMARTERPICKS</Text>
         <Text style={styles.tagline}>
           Stop guessing.{'\n'}
@@ -219,7 +215,6 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {/* Stats */}
       <View style={styles.stats}>
         {[
           { value: '+$3,840', label: '$100 BETTOR PROFIT · YTD' },
@@ -233,7 +228,6 @@ export default function LoginScreen() {
         ))}
       </View>
 
-      {/* CTA */}
       <View style={styles.actions}>
         <GoldButton
           label="Sign in with Whop →"
@@ -245,7 +239,6 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      {/* Ticker */}
       <View style={styles.ticker}>
         <Text style={styles.tickerText}>
           AI-POWERED · DAILY PICKS · TRANSPARENT ARCHIVE · ALL MAJOR SPORTS
