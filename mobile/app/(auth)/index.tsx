@@ -195,8 +195,6 @@ export default function LoginScreen() {
       {/* Live floating diamonds */}
       <DiamondField />
 
-      {/* Soft warm center glow */}
-      <View style={styles.centerGlow} pointerEvents="none" />
 
       {/* Gold top bar */}
       <View style={styles.topBar} />
@@ -284,16 +282,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bg,
     justifyContent: 'space-between',
-  },
-  centerGlow: {
-    position: 'absolute',
-    top: height * 0.18,
-    left: width * 0.1,
-    width: width * 0.8,
-    height: height * 0.4,
-    borderRadius: 999,
-    backgroundColor: Colors.accent,
-    opacity: 0.05,
   },
   topBar: {
     height: 3,
