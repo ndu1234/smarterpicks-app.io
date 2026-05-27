@@ -1,5 +1,6 @@
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
-import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
+import { Text, StyleSheet, ActivityIndicator, type ViewStyle } from 'react-native';
+import { PressableScale } from './PressableScale';
+import { Colors, Fonts, Spacing, Radius, Tracking } from '@/constants/theme';
 
 interface Props {
   label: string;
@@ -12,10 +13,10 @@ interface Props {
 
 export function GoldButton({ label, onPress, variant = 'primary', loading, disabled, style }: Props) {
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.75}
+      scaleTo={0.97}
       style={[styles.base, styles[variant], (disabled || loading) && styles.disabled, style]}
     >
       {loading ? (
@@ -23,7 +24,7 @@ export function GoldButton({ label, onPress, variant = 'primary', loading, disab
       ) : (
         <Text style={[styles.label, variant !== 'primary' && styles.labelOutline]}>{label}</Text>
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -31,7 +32,7 @@ const styles = StyleSheet.create({
   base: {
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.md,       // 8px — button inside screen, not a card
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
@@ -53,9 +54,9 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   label: {
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.bodyBold,
     fontSize: 13,
-    letterSpacing: 1.2,
+    letterSpacing: Tracking.wider,   // 1.2 — uppercase button label
     textTransform: 'uppercase',
     color: Colors.bg,
   },

@@ -1,5 +1,6 @@
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Text, StyleSheet, View } from 'react-native';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { Colors, Fonts, Spacing, Radius, TypeScale, Tracking } from '@/constants/theme';
 import type { Sport } from '@/constants/types';
 
 const SPORTS: Array<Sport | 'ALL'> = ['ALL', 'NBA', 'NFL', 'MLB', 'NHL'];
@@ -15,14 +16,16 @@ export function FilterBar({ selected, onSelect }: Props) {
       {SPORTS.map((sport) => {
         const active = selected === sport;
         return (
-          <TouchableOpacity
+          <PressableScale
             key={sport}
             onPress={() => onSelect(sport)}
+            scaleTo={0.92}
             style={[styles.tab, active && styles.tabActive]}
-            activeOpacity={0.7}
           >
-            <Text style={[styles.label, active && styles.labelActive]}>{sport}</Text>
-          </TouchableOpacity>
+            <Text style={[styles.label, active && styles.labelActive]}>
+              {sport}
+            </Text>
+          </PressableScale>
         );
       })}
     </View>
@@ -39,7 +42,7 @@ const styles = StyleSheet.create({
   tab: {
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
+    borderRadius: Radius.md,      // 8px — inside archive screen container
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -49,11 +52,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgSurface,
   },
   label: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    fontSize: TypeScale.labelMd,  // 10
     color: Colors.textMuted,
+    letterSpacing: Tracking.wide, // 0.5
   },
   labelActive: {
     color: Colors.accent,
+    letterSpacing: Tracking.wide,
   },
 });

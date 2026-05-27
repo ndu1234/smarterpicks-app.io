@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Spacing, Radius, TypeScale, Tracking } from '@/constants/theme';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { storage } from '@/lib/storage';
 
 const { width } = Dimensions.get('window');
@@ -38,9 +39,9 @@ export default function SportPrefsScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <PressableScale onPress={() => router.back()} scaleTo={0.9} style={styles.backBtn}>
             <Text style={styles.backArrow}>←</Text>
-          </TouchableOpacity>
+          </PressableScale>
           <View style={styles.logoChip}>
             <Text style={styles.logoText}>SMARTERPICKS</Text>
           </View>
@@ -60,11 +61,11 @@ export default function SportPrefsScreen() {
           {SPORTS.map((sport) => {
             const active = selected.includes(sport.key);
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={sport.key}
                 style={[styles.row, active && styles.rowActive]}
                 onPress={() => toggle(sport.key)}
-                activeOpacity={0.75}
+                scaleTo={0.975}
               >
                 <View style={styles.rowLeft}>
                   <Text style={styles.rowLogo}>{sport.logo}</Text>
@@ -73,7 +74,7 @@ export default function SportPrefsScreen() {
                 <View style={[styles.checkbox, active && styles.checkboxActive]}>
                   {active && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-              </TouchableOpacity>
+              </PressableScale>
             );
           })}
         </View>
@@ -82,14 +83,14 @@ export default function SportPrefsScreen() {
 
         {/* Continue button */}
         <View style={styles.footer}>
-          <TouchableOpacity
+          <PressableScale
             style={[styles.button, loading && { opacity: 0.7 }]}
             onPress={handleContinue}
-            activeOpacity={0.85}
+            scaleTo={0.97}
             disabled={loading}
           >
             <Text style={styles.buttonText}>CONTINUE</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </SafeAreaView>
     </View>
@@ -131,8 +132,8 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
-    letterSpacing: 1.5,
+    fontSize: TypeScale.labelLg,       // 11
+    letterSpacing: Tracking.widest,    // 1.8
     color: Colors.accent,
   },
   titleBlock: {
@@ -143,14 +144,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 26,
+    fontSize: TypeScale.displayXl,     // 28
     color: Colors.text,
-    lineHeight: 32,
-    letterSpacing: -0.3,
+    lineHeight: 34,
+    letterSpacing: Tracking.tight,     // -0.5
   },
   subtitle: {
     fontFamily: Fonts.body,
-    fontSize: 14,
+    fontSize: TypeScale.bodyMd,        // 14
     color: Colors.textMuted,
     lineHeight: 20,
   },
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgSurface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
+    borderRadius: Radius.xl,           // 16px — outer card
     paddingVertical: 16,
     paddingHorizontal: Spacing.md,
   },
@@ -183,14 +184,14 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 16,
+    fontSize: TypeScale.bodyLg,        // 16
     color: Colors.text,
-    letterSpacing: 0.3,
+    letterSpacing: Tracking.wide,      // 0.5
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: Radius.sm,           // 4px — innermost element
     borderWidth: 1.5,
     borderColor: Colors.borderStrong,
     alignItems: 'center',
@@ -202,12 +203,12 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: Colors.bg,
-    fontSize: 13,
+    fontSize: TypeScale.bodySm,        // 13
     fontWeight: '700',
   },
   hint: {
     fontFamily: Fonts.body,
-    fontSize: 12,
+    fontSize: TypeScale.bodyXs,        // 12
     color: Colors.textDim,
     textAlign: 'center',
     marginTop: Spacing.lg,
@@ -222,14 +223,14 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: Colors.accent,
-    borderRadius: 14,
+    borderRadius: Radius.md,           // 8px — button inside screen
     paddingVertical: 18,
     alignItems: 'center',
   },
   buttonText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 14,
-    letterSpacing: 1.5,
+    fontSize: TypeScale.bodySm,        // 13
+    letterSpacing: Tracking.wider,     // 1.2
     color: Colors.bg,
   },
 });
